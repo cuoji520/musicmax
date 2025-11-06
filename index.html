@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
 <title>错季~</title>
 <style>
-  /* 原有样式保留，核心修改：移除.msg的will-change属性 */
+  /* 原有样式保留 */
   html,body{
     height:100%;margin:0;overflow:hidden;
     font-family:"微软雅黑",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
@@ -25,11 +25,10 @@
       translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(.75) rotate(var(--rot));
     animation: flight var(--dur) cubic-bezier(.25,.7,.3,1) var(--delay) both;
     box-shadow:0 8px 26px rgba(0,0,0,.22);
-    /* 核心修改：移除will-change属性，避免过度占用GPU资源 */
+    will-change: transform, opacity;
     background: var(--bg);
   }
 
-  /* 以下样式与之前一致，省略重复部分... */
   @keyframes flight{
     0%{
       opacity:0;
@@ -142,7 +141,7 @@
     transition: opacity 0.5s ease;
   }
 
-  /* 歌单和播放器样式与之前一致，省略重复部分... */
+  /* 新增：歌单按钮和容器样式 */
   .playlist-btn {
     position: absolute;
     left: 18px;
@@ -164,7 +163,7 @@
   .playlist-container {
     position: absolute;
     left: 18px;
-    top: 60px;
+    top: 60px; /* 位于按钮下方 */
     width: 220px;
     max-height: 300px;
     background: rgba(255, 255, 255, 0.9);
@@ -175,11 +174,11 @@
     overflow: hidden;
     transition: all 0.3s ease;
     transform-origin: top left;
-    transform: scale(0);
+    transform: scale(0); /* 默认收起 */
     opacity: 0;
   }
   .playlist-container.active {
-    transform: scale(1);
+    transform: scale(1); /* 展开 */
     opacity: 1;
   }
   .playlist-header {
@@ -210,6 +209,7 @@
     border-left: 3px solid #4285f4;
   }
 
+  /* 播放器样式调整（简化，只保留核心控件） */
   .music-player {
     position: absolute;
     left: 50%;
@@ -228,7 +228,7 @@
     gap: 10px;
   }
   .audio-player {
-    flex: 1;
+    flex: 1; /* 占满剩余宽度 */
     border-radius: 8px;
   }
   .next-btn {
@@ -246,7 +246,7 @@
   .current-song {
     position: absolute;
     left: 50%;
-    bottom: 70px;
+    bottom: 70px; /* 位于播放器上方 */
     transform: translateX(-50%);
     font-size: 14px;
     color: #333;
@@ -287,7 +287,7 @@
   <button class="replay" id="replay">重放</button>
 
 <script>
-/* 动画逻辑与之前优化版一致（元素数量180+批量DOM操作） */
+/* 原有动画逻辑保留 */
 const tips=[
   '想念在风里飘','月亮为你亮','喜欢你很久了','你是我的心动','温柔落在人间',
   '星光都为你闪','梦里有你真好','世界因你柔软','心跳为你加速','有你真好',
@@ -297,7 +297,11 @@ const tips=[
   '风都是甜的','为你心动不止','想成为你的例外','心有桃花一片','你是我梦里的光',
   '想和你看海','此刻的风想你','遇见你后时间变慢','所有浪漫都与你有关',
   '想靠近你一点','你的名字是我心事','心软是因为你','想牵你的手看日落',
-  '每次想你星星都亮了','心跳藏不住','有你世界亮一点','甜在风里也在心里'
+  '每次想你星星都亮了','心跳藏不住','有你世界亮一点','甜在风里也在心里',
+  '天天开心','我好想你','照顾好自己','我好爱你','记得多穿衣服','记得开心','一切顺利',
+  '你要好好的','我会一直在','嘿嘿','我在呢','熬夜息','多喝热水','出门带伞',
+  '按时吃饭','想你的一天','抱抱你','不怕 有我呢','我一直在等你','平安顺遂',
+  '路上注意安全','相信自己','我们俩','健健康康一笑','摸摸头','好梦常在'
 ];
 
 const stage  = document.getElementById('stage');
@@ -305,6 +309,7 @@ const replay = document.getElementById('replay');
 const title  = document.getElementById('title');
 const musicPrompt = document.getElementById('music-prompt');
 
+// 动画相关函数保留
 const directions = [
   {dx:'0vw',dy:'-80vh'},{dx:'0vw',dy:'80vh'},
   {dx:'-80vw',dy:'0vh'},{dx:'80vw',dy:'0vh'},
@@ -374,7 +379,7 @@ function createMsg(i,total){
     el.style.setProperty('--by', by+'px');
   }, {once:true});
 
-  return el;
+  stage.appendChild(el);
 }
 
 function finalBurst(){
@@ -390,13 +395,8 @@ function playAnimation(){
   stage.querySelectorAll('.msg').forEach(n=>n.remove());
   title.style.opacity = 0;
 
-  const TOTAL = 180; // 保留元素数量优化
-  const fragment = document.createDocumentFragment(); // 保留批量DOM操作
-  for(let i=0;i<TOTAL;i++) {
-    const el = createMsg(i,TOTAL);
-    fragment.appendChild(el);
-  }
-  stage.appendChild(fragment);
+  const TOTAL = 220;
+  for(let i=0;i<TOTAL;i++) createMsg(i,TOTAL);
 
   setTimeout(()=>{ title.style.opacity = 1; }, 1400);
 
@@ -404,7 +404,8 @@ function playAnimation(){
   setTimeout(finalBurst, TOTAL_TIME_MS);
 }
 
-/* 音乐播放器逻辑与之前一致 */
+/* 音乐播放器核心逻辑 */
+// 歌曲列表（已将.ogg改为.m4a，确保对应文件存在）
 const songs = [
   { src: "https://cuoji520.github.io/musicios/瞬.m4a", name: "瞬" },
   { src: "https://cuoji520.github.io/musicios/不将就.m4a", name: "不将就" },
@@ -412,8 +413,11 @@ const songs = [
   { src: "https://cuoji520.github.io/musicios/如果呢.m4a", name: "如果呢" },
   { src: "https://cuoji520.github.io/musicios/暗号.m4a", name: "暗号" },
   { src: "https://cuoji520.github.io/musicios/关键词.m4a", name: "关键词" },
+  { src: "https://cuoji520.github.io/musicios/lots.m4a", name: "lots" },
+  // 添加更多歌曲格式：{ src: "音频URL", name: "歌曲名" }
 ];
 
+// DOM元素
 const audioPlayer = document.getElementById('audio-player');
 const currentSongEl = document.getElementById('current-song');
 const nextBtn = document.getElementById('next-btn');
@@ -421,45 +425,55 @@ const playlistBtn = document.getElementById('playlist-btn');
 const playlistContainer = document.getElementById('playlist-container');
 const songListEl = document.getElementById('song-list');
 
-let currentIndex = -1;
-let isFirstPlay = true;
+// 状态变量
+let currentIndex = -1; // 当前播放索引
+let isFirstPlay = true; // 是否首次播放（用于处理浏览器限制）
 
+// 初始化歌单列表
 function initSongList() {
-  songListEl.innerHTML = '';
+  songListEl.innerHTML = ''; // 清空列表
   songs.forEach((song, index) => {
     const li = document.createElement('li');
     li.className = 'song-item';
     li.textContent = song.name;
     li.addEventListener('click', () => {
-      playSong(index);
-      togglePlaylist();
+      playSong(index); // 点击歌单播放对应歌曲
+      togglePlaylist(); // 播放后收起歌单
     });
     songListEl.appendChild(li);
   });
 }
 
+// 播放指定索引的歌曲
 function playSong(index) {
   if (index < 0 || index >= songs.length) return;
 
+  // 更新当前索引和显示
   currentIndex = index;
   const song = songs[index];
   currentSongEl.textContent = `正在播放：${song.name}`;
 
+  // 切换音频源并播放
   audioPlayer.src = song.src;
   audioPlayer.load();
+
+  // 尝试播放（处理浏览器限制）
   audioPlayer.play().catch(err => {
     console.log('播放需要用户交互:', err);
     currentSongEl.textContent += '（请点击播放器）';
   });
 
+  // 更新歌单高亮
   updateSongHighlight();
 }
 
+// 随机播放下一首
 function playRandom() {
   if (songs.length <= 1) {
     playSong(0);
     return;
   }
+  // 避免重复播放同一首
   let randomIndex;
   do {
     randomIndex = Math.floor(Math.random() * songs.length);
@@ -467,6 +481,7 @@ function playRandom() {
   playSong(randomIndex);
 }
 
+// 更新歌单高亮
 function updateSongHighlight() {
   const items = document.querySelectorAll('.song-item');
   items.forEach((item, index) => {
@@ -474,13 +489,16 @@ function updateSongHighlight() {
   });
 }
 
+// 切换歌单展开/收起
 function togglePlaylist() {
   playlistContainer.classList.toggle('active');
+  // 切换按钮文字箭头
   playlistBtn.innerHTML = playlistContainer.classList.contains('active')
     ? '歌单 ▲'
     : '歌单 ▼';
 }
 
+// 处理首次播放（解决浏览器自动播放限制）
 function handleFirstPlay() {
   if (isFirstPlay) {
     isFirstPlay = false;
@@ -488,24 +506,37 @@ function handleFirstPlay() {
     setTimeout(() => {
       musicPrompt.style.display = 'none';
     }, 500);
-    playRandom();
+    playRandom(); // 首次交互后开始随机播放
   }
 }
 
+// 绑定事件
 function bindEvents() {
+  // 歌单按钮点击
   playlistBtn.addEventListener('click', togglePlaylist);
+
+  // 下一首按钮
   nextBtn.addEventListener('click', playRandom);
+
+  // 音频播放结束自动切歌
   audioPlayer.addEventListener('ended', playRandom);
+
+  // 首次点击页面任意位置触发播放
   document.addEventListener('click', handleFirstPlay, { once: true });
+
+  // 重放按钮只影响动画
   replay.addEventListener('click', playAnimation);
 }
 
+// 初始化
 function init() {
-  initSongList();
-  bindEvents();
-  playAnimation();
+  initSongList(); // 渲染歌单
+  bindEvents(); // 绑定事件
+  playAnimation(); // 开始动画
+  // 默认不播放，等待用户首次点击
 }
 
+// 页面加载后初始化
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
